@@ -1,62 +1,40 @@
-import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
+export const runtime = "edge";
 
-const keyPart1 = 'sk-or-v1-7b60f5b9ee89033b';
-const keyPart2 = '46ec0c97c3323f67c9c2e4d7661755ea3d062eab0d2dbbe7';
-const maskedKey = `${keyPart1}${keyPart2}`;
+import { NextResponse } from "next/server";
+import OpenAI from "openai";
 
-const openai = new OpenAI({ 
-  apiKey: process.env.QWEN_API_KEY || maskedKey, 
-  baseURL: 'https://openrouter.ai' 
+const openai = new OpenAI({
+  baseURL: "https://openrouter.ai",
+  apiKey: process.env.OPENROUTER_API_KEY,
 });
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => ({}));
-    const mood = body.mood || '';
+    const { messages } = await req.json();
 
-    if (!mood) {
-      return NextResponse.json({ error: 'Mood input is required' }, { status: 400 });
+    // Ensure messages exist and are formatted correctly for OpenRouter
+    if (!messages || !Array.isArray(messages)) {
+      return NextResponse.json({ error: "Invalid messages array provided" }, { status: 400 });
     }
 
-    let aiTextOutput = '';
+    const formattedMessages = messages.map((msg: { role: string; content: string }) => ({
+      role: msg.role || "user",
+      content: msg.content,
+    }));
 
-    try {
-      // Primary Target: Main Qwen Track Model
-      const response = await openai.chat.completions.create({
-        model: 'qwen/qwen-plus', 
-        messages: [
-          {
-            role: 'user',
-            content: `You are ZenithAI, a helpful, conversational AI assistant just like ChatGPT and Gemini. Speak to me directly with a detailed, natural, and highly empathetic response based on my current emotional state: ${mood}`,
-          }
-        ]
-      });
-      aiTextOutput = response.choices?.[0]?.message?.content || '';
-    } catch (primaryError) {
-      console.warn('Primary line busy, routing to fallback...');
-    }
-
-    // High-traffic fallback engine to prevent empty blocks
-    if (!aiTextOutput) {
-      const fallbackResponse = await openai.chat.completions.create({
-        model: 'meta-llama/llama-3.2-3b-instruct:free', 
-        messages: [
-          {
-            role: 'user',
-            content: `You are ZenithAI, an expert conversational assistant built on the Qwen framework. Speak to me directly with a detailed, natural, and highly empathetic response based on my current emotional state: ${mood}`,
-          }
-        ]
-      });
-      aiTextOutput = fallbackResponse.choices?.[0]?.message?.content || '';
-    }
-
-    return new Response(aiTextOutput || 'Neural connection synchronized. Please try clicking generate once more to stream.', {
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    const response = await openai.chat.completions.create({
+      model: "qwen/qwen-plus",
+      messages: formattedMessages,
     });
-    
-  } catch (error: any) {
-    console.error('SDK Gateway Capture Error:', error);
-    return new Response(`System Operational Status: ${error?.message || error}. Please retry generation.`, { status: 200 });
+
+    // Extract text safely with multiple fallbacks
+    const textOutput = response.choices?.[0]?.message?.content || "No response text found.";
+
+    // Return as a clean JSON structure that your frontend can read
+    return NextResponse.json({ text: textOutput });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown backend error";
+    console.error("OpenRouter Production Error:", errorMessage);
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
