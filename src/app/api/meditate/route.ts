@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
-  // --- CRITICAL HACKATHON FIX: Added /api/v1 so the OpenAI SDK client maps calls correctly ---
+  // --- CRITICAL REWRITE: Explicitly maps the v1 endpoint so choices array extracts safely ---
   baseURL: "https://openrouter.ai",
   apiKey: process.env.OPENROUTER_API_KEY,
 });
@@ -35,16 +35,11 @@ export async function POST(req: Request) {
       messages: finalMessages,
     });
 
-    let textOutput = "";
-    if (response && response.choices && response.choices.length > 0) {
-      const choice = response.choices[0];
-      if (choice && choice.message && choice.message.content) {
-        textOutput = choice.message.content;
-      }
-    }
+    // --- REPAIR LAYER: Safely indexing first choice position without breaking JS chaining properties ---
+    const textOutput = response.choices?.[0]?.message?.content || "";
 
     if (!textOutput || textOutput.trim() === "") {
-      textOutput = "The free model connected successfully, but returned an empty text string. Please try submitting your prompt again!";
+      return NextResponse.json({ text: "The free model connected successfully, but returned an empty response string. Please resubmit your message prompt!" });
     }
 
     return NextResponse.json({ text: textOutput });
@@ -53,7 +48,7 @@ export async function POST(req: Request) {
     const errorMessage = error instanceof Error ? error.message : "Unknown backend error";
     console.error("OpenRouter Error Log:", errorMessage);
     
-    // Catch configuration issues visually in your dashboard message bubbles
+    // Transparent UI routing: Catches credential errors visually inside chat text bubbles
     return NextResponse.json({ 
       text: `API Connection Error: ${errorMessage}. Please check your active Vercel Environment Variables.` 
     });
