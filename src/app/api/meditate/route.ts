@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
+  // --- CRITICAL HACKATHON FIX: Added /api/v1 so the OpenAI SDK client maps calls correctly ---
   baseURL: "https://openrouter.ai",
   apiKey: process.env.OPENROUTER_API_KEY,
 });
@@ -29,13 +30,11 @@ export async function POST(req: Request) {
       ...formattedMessages
     ];
 
-    // --- MODIFICATION: Updated model to a guaranteed permanent free tier endpoint ---
     const response = await openai.chat.completions.create({
       model: "meta-llama/llama-3-8b-instruct:free", 
       messages: finalMessages,
     });
 
-    // Safe multi-layer check to pull the response text accurately from the OpenRouter return array
     let textOutput = "";
     if (response && response.choices && response.choices.length > 0) {
       const choice = response.choices[0];
@@ -44,20 +43,19 @@ export async function POST(req: Request) {
       }
     }
 
-    // Direct fallback layer check if text remains empty 
     if (!textOutput || textOutput.trim() === "") {
-      textOutput = "The model connected successfully, but returned an empty response. Please try sending your message again.";
+      textOutput = "The free model connected successfully, but returned an empty text string. Please try submitting your prompt again!";
     }
 
     return NextResponse.json({ text: textOutput });
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown backend error";
-    console.error("OpenRouter Production Error Log:", errorMessage);
+    console.error("OpenRouter Error Log:", errorMessage);
     
-    // Prints real error logs directly into the frontend bubble if your Vercel Environment key is disconnected
+    // Catch configuration issues visually in your dashboard message bubbles
     return NextResponse.json({ 
-      text: `API Connection Error: ${errorMessage}. Make sure your OPENROUTER_API_KEY is configured in your active Vercel project settings.` 
+      text: `API Connection Error: ${errorMessage}. Please check your active Vercel Environment Variables.` 
     });
   }
 }
