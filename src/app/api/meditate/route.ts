@@ -22,9 +22,18 @@ export async function POST(req: Request) {
       content: msg.content,
     }));
 
+    // HACKATHON SYSTEM FIX: Tells Qwen to output simple text/HTML snippets, never whole layouts
+    const finalMessages = [
+      {
+        role: "system",
+        content: "You are a conversational AI assistant for mental wellness. Provide short, concise, empathetic responses. Respond ONLY in plain paragraph text using raw text or basic HTML strings like <p> lines, <br>, or <strong> tags for accentuation. NEVER output full boilerplate structure blocks like <!DOCTYPE html>, <html>, <head>, or <body> tags."
+      },
+      ...formattedMessages
+    ];
+
     const response = await openai.chat.completions.create({
       model: "qwen/qwen-plus",
-      messages: formattedMessages,
+      messages: finalMessages,
     });
 
     // Extract text safely with multiple fallbacks
