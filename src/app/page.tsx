@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from "react";
@@ -20,7 +19,6 @@ export default function Home() {
     const userMessage: Message = { role: "user", content: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
-    setLoading(false);
     setLoading(true);
 
     try {
@@ -68,10 +66,15 @@ export default function Home() {
                 className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm tracking-wide leading-relaxed shadow-md ${
                   msg.role === "user"
                     ? "bg-cyan-600 text-white rounded-tr-none"
-                    : "bg-gray-800 text-gray-100 border border-gray-700 rounded-tl-none whitespace-pre-wrap"
+                    : "bg-gray-800 text-gray-100 border border-gray-700 rounded-tl-none chat-html-container"
                 }`}
               >
-                {msg.content}
+                {msg.role === "user" ? (
+                  <span className="whitespace-pre-wrap">{msg.content}</span>
+                ) : (
+                  /* --- LIVE NATIVE FIX: Interprets structural strings without breaking the layout --- */
+                  <div dangerouslySetInnerHTML={{ __html: msg.content }} />
+                )}
               </div>
             </div>
           ))
