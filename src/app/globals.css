@@ -25,3 +25,32 @@ body {
     text-wrap: balance;
   }
 }
+
+/* --- HACKATHON FIX: Spacing styles for parsed markdown messages --- */
+.prose p {
+  margin-bottom: 0.75rem;
+}
+.prose p:last-child {
+  margin-bottom: 0;
+}
+.prose h1, .prose h2, .prose h3 {
+  color: #22d3ee; 
+  font-weight: 700;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+.prose h1 { font-size: 1.25rem; }
+.prose h2 { font-size: 1.1rem; }
+.prose ul {
+  margin-left: 1.25rem;
+  margin-bottom: 0.75rem;
+  list-style-type: disc;
+}
+.prose ol {
+  margin-left: 1.25rem;
+  margin-bottom: 0.75rem;
+  list-style-type: decimal;
+}
+.prose li {
+  margin-bottom: 0.25rem;
+}
