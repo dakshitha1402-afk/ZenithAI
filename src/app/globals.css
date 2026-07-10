@@ -26,31 +26,23 @@ body {
   }
 }
 
-/* --- HACKATHON FIX: Spacing styles for parsed markdown messages --- */
-.prose p {
+/* --- HACKATHON LIVE FIX: Restores padding/margins for incoming dynamic inner HTML items --- */
+.chat-html-container p {
   margin-bottom: 0.75rem;
+  line-height: 1.6;
 }
-.prose p:last-child {
+.chat-html-container p:last-child {
   margin-bottom: 0;
 }
-.prose h1, .prose h2, .prose h3 {
-  color: #22d3ee; 
-  font-weight: 700;
-  margin-top: 1rem;
-  margin-bottom: 0.5rem;
+.chat-html-container strong {
+  color: #22d3ee; /* Syncs cleanly with your cyan-400 interface theme highlight color */
+  font-weight: bold;
 }
-.prose h1 { font-size: 1.25rem; }
-.prose h2 { font-size: 1.1rem; }
-.prose ul {
+.chat-html-container ul {
   margin-left: 1.25rem;
   margin-bottom: 0.75rem;
   list-style-type: disc;
 }
-.prose ol {
-  margin-left: 1.25rem;
-  margin-bottom: 0.75rem;
-  list-style-type: decimal;
-}
-.prose li {
+.chat-html-container li {
   margin-bottom: 0.25rem;
 }
