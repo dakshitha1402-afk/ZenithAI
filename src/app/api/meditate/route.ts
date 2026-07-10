@@ -3,14 +3,19 @@ export const runtime = "edge";
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
+// --- FIX: Safely fallback to an empty string during build compilation so Vercel doesn't crash ---
 const openai = new OpenAI({
-  // --- CRITICAL REWRITE: Explicitly maps the v1 endpoint so choices array extracts safely ---
   baseURL: "https://openrouter.ai",
-  apiKey: process.env.OPENROUTER_API_KEY,
+  apiKey: process.env.OPENROUTER_API_KEY || "dummy_build_key",
 });
 
 export async function POST(req: Request) {
   try {
+    // Safety check if the real key is missing during live runtime execution
+    if (!process.env.OPENROUTER_API_KEY) {
+      return NextResponse.json({ text: "API Connection Error: Your OPENROUTER_API_KEY variable is not added to your Vercel project settings yet!" });
+    }
+
     const { messages } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
@@ -25,7 +30,7 @@ export async function POST(req: Request) {
     const finalMessages = [
       {
         role: "system",
-        content: "You are an empathetic conversational AI assistant for mental wellness. Respond only in plain paragraph text or basic HTML structural blocks (like <p> or <br>). Never write a complete webpage layout wrapper such as <!DOCTYPE html>, <html>, or <body> tags."
+        content: "You are an empathetic conversational AI assistant for mental wellness. Respond only in plain paragraph text or basic HTML structural blocks."
       },
       ...formattedMessages
     ];
@@ -35,22 +40,16 @@ export async function POST(req: Request) {
       messages: finalMessages,
     });
 
-    // --- REPAIR LAYER: Safely indexing first choice position without breaking JS chaining properties ---
     const textOutput = response.choices?.[0]?.message?.content || "";
 
     if (!textOutput || textOutput.trim() === "") {
-      return NextResponse.json({ text: "The free model connected successfully, but returned an empty response string. Please resubmit your message prompt!" });
+      return NextResponse.json({ text: "The model connected successfully, but returned an empty response string. Please resubmit your message!" });
     }
 
     return NextResponse.json({ text: textOutput });
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown backend error";
-    console.error("OpenRouter Error Log:", errorMessage);
-    
-    // Transparent UI routing: Catches credential errors visually inside chat text bubbles
-    return NextResponse.json({ 
-      text: `API Connection Error: ${errorMessage}. Please check your active Vercel Environment Variables.` 
-    });
+    return NextResponse.json({ text: `API Connection Error: ${errorMessage}` });
   }
 }
